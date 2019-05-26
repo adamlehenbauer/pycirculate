@@ -2,26 +2,38 @@
 <html>
     <head>
         <title>Anova App</title>
+        <style>
+table, th, td { border: 1px solid black; }
+td { padding: 10px; }
+table { border-collapse: collapse; }
+.center {
+    margin: auto;
+    width: 50%;
+    padding: 10px;
+}
+        </style>
     </head>
     <body>
+        <div class="center">
         <!-- todo, download and serve from flask -->
         <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+        <h1>Current Status</h1>
         <table>
             <tr>
                 <td>Current Status:</td>
-                <td>{{ anova_context.anova_status }}</td>
+                <td id="currentStatus">{{ anova_context.anova_status }}</td>
             </tr>
             <tr>
                 <td>Timer Status:</td>
-                <td>{{ anova_context.timer_status.status }}</td>
+                <td id="timerStatus">{{ anova_context.timer_status.status }}</td>
             </tr>
             <tr>
-                <td id="targetTemp">Target Temp:</td>
-                <td>{{ anova_context.target_temp }}</td>
+                <td>Target Temp:</td>
+                <td id="targetTemp">{{ anova_context.target_temp }}</td>
             </tr>
             <tr>
                 <td>Current Temp:</td>
-                <td>{{ anova_context.current_temp }}</td>
+                <td id="currentTemp">{{ anova_context.current_temp }}</td>
             </tr>
             {#
             <tr>
@@ -36,13 +48,16 @@
                 <tr>
                     <!-- TODO add current temp, status -->
                     <td>Temp: </td>
-                    <td><input type="text" name="target-temp"></td>
+                    <td>
+                        <input type="text" name="target-temp">
+                        <input type="submit" value="Set"/>
+                    </td>
                 </tr>
             </table>
-            <input type="submit" value="Set"/>
         </form>
         <h1>Result</h1>
-        <div id="resut"></div>
+        <div id="result"></div>
+        </div>
 
         <script>
 $( "#tempForm" ).submit(function( event ) {
@@ -57,12 +72,22 @@ $( "#tempForm" ).submit(function( event ) {
             type: "POST",
             url: url,
             data: JSON.stringify({ temp: targetTemp }),
-            contentType: 'application/json'
+            contentType: 'application/json',
+            success: function (data) {
+                var content = $(data).find("#set_temp");
+                $("result").empty().append(content);
+            }
     });
 
     posting.done(function( data ) {
-        var content = $( data ).find( "#set_temp");
-        $( "result").empty().append(content);
+        var content = data.message;
+        if (!content) {
+            $("#result").empty().append("No response received");
+        } else {
+            $( "#result").empty().append(content);
+        }
+        var newTemp = data.set_temp;
+        $("#targetTemp").empty().append(newTemp);
     });
 });
         </script>

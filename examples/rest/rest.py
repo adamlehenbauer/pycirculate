@@ -176,9 +176,6 @@ def set_temp():
 #    pdb.set_trace()
     app.logger.info("request: %s", request)
     try:
-        app.logger.info("request.is_json(): %s", request.is_json)
-        app.logger.info("request.get_data(): %s", request.get_data())
-        app.logger.info("request.get_json(): %s", request.get_json())
         temp = request.get_json()['temp']
     except (KeyError, TypeError) as exc:
         app.logger.error("Adam error")
@@ -191,7 +188,9 @@ def set_temp():
         e = sys.exec_info()[0]
         app.logger.error("any exception: %s", e)
     temp = float(temp)
-    output = {"set_temp": float(app.anova_controller.set_temp(temp))}
+    output = {
+            "message": "Target temp updated to " + str(temp),
+            "set_temp": float(app.anova_controller.set_temp(temp))}
 
     return jsonify(output)
 
