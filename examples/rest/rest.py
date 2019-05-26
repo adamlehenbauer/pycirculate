@@ -8,7 +8,7 @@ if you want to scale this API with multi-processing, keep that in mind to preven
 such as:
     `BTLEException: Failed to connect to peripheral 78:A5:04:38:B3:FA, addr type: public`
 """
-from flask import Flask, request, jsonify, abort, make_response
+from flask import Flask, request, jsonify, abort, make_response, render_template, Request, _request_ctx_stack
 from pycirculate.anova import AnovaController
 from threading import Timer
 import datetime
@@ -17,11 +17,15 @@ import json
 import os
 import sys
 import warnings
+import pdb
 
 app = Flask(__name__)
 
-ANOVA_MAC_ADDRESS = "78:A5:04:38:B3:FA"
+ANOVA_MAC_ADDRESS = "F4:B8:5E:B3:37:EC"
 
+def on_json_loading_failed(self):
+    ctx = _request_ctx_stack.top
+    pdb.set_trace()
 
 class RESTAnovaController(AnovaController):
     """
@@ -41,6 +45,11 @@ class RESTAnovaController(AnovaController):
         else:
             self.logger = logging.getLogger()
         super(RESTAnovaController, self).__init__(mac_address, connect=connect)
+        #print "connect=", connect
+        #print "super(RESTAnovaController, self): ", super(RESTAnovaController, self)
+        #print "super(RESTAnovaController, self): ", super(AnovaController, self)
+        #super(AnovaController, self).__init__(mac_address, connect=connect)
+        Request.on_json_loading_failed = on_json_loading_failed
 
     def set_timeout(self, timeout):
         """
@@ -89,6 +98,7 @@ class RESTAnovaController(AnovaController):
 
 @app.errorhandler(400)
 def bad_request(error):
+    app.logger.error("bad_request handler with exception: %s", error)
     return make_response(jsonify({'error': 'Bad request.'}), 400)
 
 @app.errorhandler(404)
@@ -126,12 +136,30 @@ def index():
         output = {
                 "anova_status": app.anova_controller.anova_status(),
                 "timer_status": {"minutes_remaining": int(timer[0]), "status": timer[1],},
+                "target temp": app.anova_controller.read_set_temp(),
+                "current temp": app.anova_controller.read_temp()
                 }
     except Exception as exc:
         app.logger.error(exc)
         return make_error(500, "{0}: {1}".format(repr(exc), str(exc)))
 
     return jsonify(output)
+
+def anova_context():
+    timer = app.anova_controller.read_timer()
+    timer = timer.split()
+    #pdb.set_trace()
+    output = {
+                "anova_status": app.anova_controller.anova_status(),
+                "timer_status": {"minutes_remaining": int(timer[0]), "status": timer[1],},
+                "target_temp": str(app.anova_controller.read_set_temp()),
+                "current_temp": float(app.anova_controller.read_temp())
+                }
+    return output
+
+@app.route('/app', methods=["GET"])
+def webapp():
+    return render_template('app.html', anova_context=anova_context())
 
 @app.route('/temp', methods=["GET"])
 def get_temp():
@@ -145,10 +173,23 @@ def get_temp():
 
 @app.route('/temp', methods=["POST"])
 def set_temp():
+#    pdb.set_trace()
+    app.logger.info("request: %s", request)
     try:
+        app.logger.info("request.is_json(): %s", request.is_json)
+        app.logger.info("request.get_data(): %s", request.get_data())
+        app.logger.info("request.get_json(): %s", request.get_json())
         temp = request.get_json()['temp']
-    except (KeyError, TypeError):
+    except (KeyError, TypeError) as exc:
+        app.logger.error("Adam error")
+        app.logger.error(exc)
         abort(400)
+    except Exception as e:
+        app.logger.error("unexpected exception: %s", e)
+        abort(400)
+    except:
+        e = sys.exec_info()[0]
+        app.logger.error("any exception: %s", e)
     temp = float(temp)
     output = {"set_temp": float(app.anova_controller.set_temp(temp))}
 
@@ -257,7 +298,9 @@ def main():
     except KeyError:
         warnings.warn("Enable HTTP Basic Authentication by setting the 'PYCIRCULATE_USERNAME' and 'PYCIRCULATE_PASSWORD' environment variables.")
 
-    app.run(host='0.0.0.0', port=5000, ssl_context='adhoc')
+    #app.run(host='0.0.0.0', port=5000, ssl_context='adhoc')
+    app.logger.info("Starting up for Adam")
+    app.run(host='0.0.0.0', port=5000, ssl_context=None, debug=False, use_reloader=False)
 
 if __name__ == '__main__':
     main()

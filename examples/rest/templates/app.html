@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Anova App</title>
+    </head>
+    <body>
+        <!-- todo, download and serve from flask -->
+        <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+        <table>
+            <tr>
+                <td>Current Status:</td>
+                <td>{{ anova_context.anova_status }}</td>
+            </tr>
+            <tr>
+                <td>Timer Status:</td>
+                <td>{{ anova_context.timer_status.status }}</td>
+            </tr>
+            <tr>
+                <td id="targetTemp">Target Temp:</td>
+                <td>{{ anova_context.target_temp }}</td>
+            </tr>
+            <tr>
+                <td>Current Temp:</td>
+                <td>{{ anova_context.current_temp }}</td>
+            </tr>
+            {#
+            <tr>
+                <td>Everything:</td>
+                <td>{{ anova_context }}</td>
+            </tr>
+            #}
+        </table>
+        <h1>Set Temp</h1>
+        <form id="tempForm" action="/temp">
+            <table>
+                <tr>
+                    <!-- TODO add current temp, status -->
+                    <td>Temp: </td>
+                    <td><input type="text" name="target-temp"></td>
+                </tr>
+            </table>
+            <input type="submit" value="Set"/>
+        </form>
+        <h1>Result</h1>
+        <div id="resut"></div>
+
+        <script>
+$( "#tempForm" ).submit(function( event ) {
+    event.preventDefault();
+
+    var $form = $( this ),
+        targetTemp = $form.find("input[name='target-temp']").val(),
+        url = $form.attr("action");
+        
+    var posting = 
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: JSON.stringify({ temp: targetTemp }),
+            contentType: 'application/json'
+    });
+
+    posting.done(function( data ) {
+        var content = $( data ).find( "#set_temp");
+        $( "result").empty().append(content);
+    });
+});
+        </script>
+    </body>
+</html>
