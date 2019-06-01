@@ -37,6 +37,7 @@ class RESTAnovaController(AnovaController):
 
     TIMEOUT = 5 * 60 # Keep the connection open for this many seconds.
     TIMEOUT_HEARTBEAT = 20
+    LOOPBACK = True
 
     def __init__(self, mac_address, connect=True, logger=None):
         self.last_command_at = datetime.datetime.now()
@@ -76,22 +77,25 @@ class RESTAnovaController(AnovaController):
                 (timeout_at - datetime.datetime.now()).total_seconds())) 
 
     def connect(self):
-        super(RESTAnovaController, self).connect()
-        self.last_command_at = datetime.datetime.now()
-        self.timeout()
+        if not self.LOOPBACK:
+            super(RESTAnovaController, self).connect()
+            self.last_command_at = datetime.datetime.now()
+            self.timeout()
 
     def close(self):
-        super(RESTAnovaController, self).close()
-        try:
-            self._timeout_timer.cancel()
-        except AttributeError:
-            pass
+        if not self.LOOPBACK:
+            super(RESTAnovaController, self).close()
+            try:
+                self._timeout_timer.cancel()
+            except AttributeError:
+                pass
 
     def _send_command(self, command):
-        if not self.is_connected:
-            self.connect()
-        self.last_command_at = datetime.datetime.now()
-        return super(RESTAnovaController, self)._send_command(command)
+        if not self.LOOPBACK:
+            if not self.is_connected:
+                self.connect()
+            self.last_command_at = datetime.datetime.now()
+            return super(RESTAnovaController, self)._send_command(command)
 
 
 # Error handlers
@@ -144,6 +148,10 @@ def index():
         return make_error(500, "{0}: {1}".format(repr(exc), str(exc)))
 
     return jsonify(output)
+
+@app.route('/noop', methods=["GET"])
+def noop():
+    return jsonify({"operation": "noop"})
 
 def anova_context():
     timer = app.anova_controller.read_timer()
@@ -297,9 +305,14 @@ def main():
     except KeyError:
         warnings.warn("Enable HTTP Basic Authentication by setting the 'PYCIRCULATE_USERNAME' and 'PYCIRCULATE_PASSWORD' environment variables.")
 
+    # adhoc context - doesn't work with my version of openssl, algorithm is too weak
     #app.run(host='0.0.0.0', port=5000, ssl_context='adhoc')
+    cert = os.environ["PYCIRCULATE_CERT"]
+    key = os.environ["PYCIRCULATE_KEY"]
+    app.logger.info("Using cert [%s] and key [%s]", cert, key)
+    app.run(host='0.0.0.0', port=5000, ssl_context=(cert, key))
     app.logger.info("Starting up for Adam")
-    app.run(host='0.0.0.0', port=5000, ssl_context=None, debug=False, use_reloader=False)
+    #app.run(host='0.0.0.0', port=5000, ssl_context=None, debug=False, use_reloader=False)
 
 if __name__ == '__main__':
     main()
