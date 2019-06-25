@@ -10,14 +10,45 @@ def sanitize(raw):
 def replchars_to_hex(match):
     return r'\x{0:02x}'.format(ord(match.group()))
 
+# TODO write a test for this
+class History:
+    """
+    Holds read notifications to join split responses
+    """
+    def __init__(self):
+        # what's arrived since the last read, some responses are split up into multiple messages,
+        # we will join together all that arrive
+        self.last_notifications = []
+        # longer history of read notifications
+        self.notification_history = []
+
+    def addEntry(self, cHandle, data):
+        self.last_notifications.append((cHandle, data))
+
+    def getJoinedRead(self):
+        if len(self.last_notifications) == 0:
+            return None
+        entry = self.last_notifications[0]
+        firstHandle = entry[0]
+        joinable = []
+
+        while entry and entry[0] == firstHandle:
+            entry = self.last_notifications.pop(0)
+            joinable.append(entry[1])
+            if len(self.last_notifications) > 0:
+                entry = self.last_notifications[0]
+            else:
+                entry = None
+
+        return "".join(joinable)
+
 class AnovaDelegate(btle.DefaultDelegate):
     """
     Process notifications from Anova.
     """
     def __init__(self):
         btle.DefaultDelegate.__init__(self)
-
-        self.last_notifications = []
+        self.history = History()
         self.logger = logging.getLogger()
 
     def handleNotification(self, cHandle, data):
@@ -26,12 +57,14 @@ class AnovaDelegate(btle.DefaultDelegate):
         self._store_notification(cHandle, data)
 
     def _store_notification(self, cHandle, data):
-        self.last_notifications.append((cHandle, data))
+        #self.last_notifications.append((cHandle, data))
         # keep the last 10 notifications
-        self.last_notifications = self.last_notifications[-10:]
+        #self.last_notifications = self.last_notifications[-10:]
+        self.history.addEntry(cHandle, data)
 
     def get_last_notification(self):
-        return self.last_notifications[-1]
+        #return self.last_notifications[-1]
+        return self.history.getJoinedRead()
 
 
 class AnovaController(object):
@@ -82,14 +115,16 @@ class AnovaController(object):
 
     def _read(self):
         #self.characteristic.read()
-        if self.anova.waitForNotifications(1.0):
-            # looks like we got out notifcation!
-            # maybe we should pass a reference to self into the Delegate through a callback...
-            return self.anova.delegate.get_last_notification()
+        for i in [1, 2]:
+            if self.anova.waitForNotifications(1.0):
+                self.characteristic.read()
+                # looks like we got out notifcation!
+                # maybe we should pass a reference to self into the Delegate through a callback...
+                return self.anova.delegate.get_last_notification()
 
     def send_command_async(self, command):
         self._send_command(command)
-        _, output = self._read()
+        output = self._read()
         return output.strip()
 
     ##### Temperature commands
