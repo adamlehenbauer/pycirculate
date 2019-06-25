@@ -1,5 +1,14 @@
 from bluepy import btle
 import datetime
+import logging
+import re
+
+replchars = re.compile(r'[\n\r]')
+def sanitize(raw):
+    return replchars.sub(replchars_to_hex, raw)
+
+def replchars_to_hex(match):
+    return r'\x{0:02x}'.format(ord(match.group()))
 
 class AnovaDelegate(btle.DefaultDelegate):
     """
@@ -9,9 +18,11 @@ class AnovaDelegate(btle.DefaultDelegate):
         btle.DefaultDelegate.__init__(self)
 
         self.last_notifications = []
+        self.logger = logging.getLogger()
 
     def handleNotification(self, cHandle, data):
         # print repr(self), "handleNotification(), cHandle: ", cHandle, "data: ",  data
+        self.logger.info("<<< cHandle=" + str(cHandle) + ", data=[" + sanitize(data) + "]")
         self._store_notification(cHandle, data)
 
     def _store_notification(self, cHandle, data):
@@ -27,6 +38,7 @@ class AnovaController(object):
     def __init__(self, mac_address, connect=True):
         self.MAC_ADDRESS = mac_address
         self.is_connected = False
+        self.logger = logging.getLogger()
         if connect:
             self.connect()
 
@@ -59,7 +71,14 @@ class AnovaController(object):
 
     def _send_command(self, command):
         command = "{0}\r".format(command)
+        self.logger.info(">>> command=[" + sanitize(command) +"]")
         self.characteristic.write(command)
+
+    def sanitize(raw):
+        return self.replchars.sub(replchars_to_hex, raw)
+
+    def replchars_to_hex(match):
+            return r'\x{0:02x}'.format(ord(match.group()))
 
     def _read(self):
         #self.characteristic.read()

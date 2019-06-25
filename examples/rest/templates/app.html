@@ -15,49 +15,55 @@ table { border-collapse: collapse; }
     </head>
     <body>
         <div class="center">
-        <!-- todo, download and serve from flask -->
-        <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
-        <h1>Current Status</h1>
-        <table>
-            <tr>
-                <td>Current Status:</td>
-                <td id="currentStatus">{{ anova_context.anova_status }}</td>
-            </tr>
-            <tr>
-                <td>Timer Status:</td>
-                <td id="timerStatus">{{ anova_context.timer_status.status }}</td>
-            </tr>
-            <tr>
-                <td>Target Temp:</td>
-                <td id="targetTemp">{{ anova_context.target_temp }}</td>
-            </tr>
-            <tr>
-                <td>Current Temp:</td>
-                <td id="currentTemp">{{ anova_context.current_temp }}</td>
-            </tr>
-            {#
-            <tr>
-                <td>Everything:</td>
-                <td>{{ anova_context }}</td>
-            </tr>
-            #}
-        </table>
-        <h1>Set Temp</h1>
-        <form id="tempForm" action="/temp">
+            <!-- todo, download and serve from flask -->
+            <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+            <h1>Current Status</h1>
             <table>
                 <tr>
-                    <!-- TODO add current temp, status -->
-                    <td>Temp: </td>
-                    <td>
-                        <input type="text" name="target-temp">
-                        <input type="submit" value="Set"/>
-                    </td>
+                    <td>Current Status:</td>
+                    <td id="currentStatus">{{ anova_context.anova_status }}</td>
                 </tr>
+                <tr>
+                    <td>Timer Status:</td>
+                    <td id="timerStatus">{{ anova_context.timer_status.status }}</td>
+                </tr>
+                <tr>
+                    <td>Target Temp:</td>
+                    <td id="targetTemp">{{ anova_context.target_temp }}</td>
+                </tr>
+                <tr>
+                    <td>Current Temp:</td>
+                    <td id="currentTemp">{{ anova_context.current_temp }}</td>
+                </tr>
+                <tr>
+                    <td>Last Updated:</td>
+                    <td id="lastUpdate">{{ anova_context.last_updated }}</td>
+                {#
+                <tr>
+                    <td>Everything:</td>
+                    <td>{{ anova_context }}</td>
+                </tr>
+                #}
             </table>
-        </form>
-        <h1>Result</h1>
-        <div id="result"></div>
-        </div>
+            <button id="refresh">Refresh</button>
+            <h1>Set Temp</h1>
+            <form id="tempForm" action="/temp">
+                <table>
+                    <tr>
+                        <!-- TODO add current temp, status -->
+                        <td>Temp: </td>
+                        <td>
+                            <input type="text" name="target-temp">
+                            <input type="submit" value="Set"/>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+            <button id="start-button">Start</button>
+            <button id="stop-button">Stop</button>
+            <h1>Result</h1>
+            <div id="result"></div>
+            </div>
 
         <script>
 $( "#tempForm" ).submit(function( event ) {
@@ -74,22 +80,59 @@ $( "#tempForm" ).submit(function( event ) {
             data: JSON.stringify({ temp: targetTemp }),
             contentType: 'application/json',
             success: function (data) {
-                var content = $(data).find("#set_temp");
-                $("result").empty().append(content);
+                /*var content = $(data).find("#set_temp");
+                $("#result").empty().append(content);*/
+                updateDeviceData(data.anova);
+                updateMessage(data.message);
             }
     });
 
     posting.done(function( data ) {
-        var content = data.message;
-        if (!content) {
-            $("#result").empty().append("No response received");
-        } else {
-            $( "#result").empty().append(content);
-        }
-        var newTemp = data.set_temp;
-        $("#targetTemp").empty().append(newTemp);
+        updateDeviceData(data.anova);
+        updateMessage(data.message);
     });
 });
+
+$("#start-button").click(function(event) {
+    event.preventDefault();
+
+    $.post("/start", function(data) {
+        updateDeviceData(data.anova);
+        updateMessage(data.message);
+    });
+});
+
+$("#stop-button").click(function(event) {
+    event.preventDefault();
+    $.post("/stop", function(data) {
+        updateDeviceData(data.anova);
+        updateMessage(data.message);
+    });
+});
+
+$("#refresh").click(function(event) {
+    event.preventDefault();
+    $.get("/refresh", function(data) {
+        updateDeviceData(data.anova);
+        updateMessage(data.message);
+    });
+});
+
+function updateDeviceData(data) {
+    $("#currentStatus").empty().append(data.anova_status);
+    $("#timerStatus").empty().append(data.timer_status.status);
+    $("#targetTemp").empty().append(data.target_temp);
+    $("#currentTemp").empty().append(data.current_temp);
+    $("#lastUpdate").empty().append(data.last_updated);
+}
+
+function updateMessage(message) {
+    if (!message) {
+        $("#result").empty().append("No response received");
+    } else {
+        $("#result").empty().append(message);
+    }
+}
         </script>
     </body>
 </html>

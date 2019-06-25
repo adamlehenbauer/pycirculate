@@ -37,7 +37,7 @@ class RESTAnovaController(AnovaController):
 
     TIMEOUT = 5 * 60 # Keep the connection open for this many seconds.
     TIMEOUT_HEARTBEAT = 20
-    LOOPBACK = True
+    LOOPBACK = False
 
     def __init__(self, mac_address, connect=True, logger=None):
         self.last_command_at = datetime.datetime.now()
@@ -46,10 +46,6 @@ class RESTAnovaController(AnovaController):
         else:
             self.logger = logging.getLogger()
         super(RESTAnovaController, self).__init__(mac_address, connect=connect)
-        #print "connect=", connect
-        #print "super(RESTAnovaController, self): ", super(RESTAnovaController, self)
-        #print "super(RESTAnovaController, self): ", super(AnovaController, self)
-        #super(AnovaController, self).__init__(mac_address, connect=connect)
         Request.on_json_loading_failed = on_json_loading_failed
 
     def set_timeout(self, timeout):
@@ -134,20 +130,19 @@ def make_error(status_code, message, sub_code=None, action=None, **kwargs):
 
 @app.route('/', methods=["GET"])
 def index():
+    return render_template('app.html', anova_context=anova_context())
+
+@app.route("/refresh", methods=["GET"])
+def refresh():
     try:
         timer = app.anova_controller.read_timer()
         timer = timer.split()
-        output = {
-                "anova_status": app.anova_controller.anova_status(),
-                "timer_status": {"minutes_remaining": int(timer[0]), "status": timer[1],},
-                "target temp": app.anova_controller.read_set_temp(),
-                "current temp": app.anova_controller.read_temp()
-                }
+        output = anova_context() 
     except Exception as exc:
         app.logger.error(exc)
         return make_error(500, "{0}: {1}".format(repr(exc), str(exc)))
 
-    return jsonify(output)
+    return jsonify({"anova": output, "message": "Refreshed"})
 
 @app.route('/noop', methods=["GET"])
 def noop():
@@ -155,15 +150,20 @@ def noop():
 
 def anova_context():
     timer = app.anova_controller.read_timer()
+    app.logger.info("timer in context:" + timer)
     timer = timer.split()
-    #pdb.set_trace()
     output = {
                 "anova_status": app.anova_controller.anova_status(),
                 "timer_status": {"minutes_remaining": int(timer[0]), "status": timer[1],},
-                "target_temp": str(app.anova_controller.read_set_temp()),
-                "current_temp": float(app.anova_controller.read_temp())
+                "target_temp": app.anova_controller.read_set_temp(),
+                "current_temp": float(app.anova_controller.read_temp()),
+                "last_updated": datetime.datetime.now()
                 }
     return output
+
+@app.route('/debug', methods=["GET"])
+def debug():
+    return jsonify
 
 @app.route('/app', methods=["GET"])
 def webapp():
@@ -181,8 +181,6 @@ def get_temp():
 
 @app.route('/temp', methods=["POST"])
 def set_temp():
-#    pdb.set_trace()
-    app.logger.info("request: %s", request)
     try:
         temp = request.get_json()['temp']
     except (KeyError, TypeError) as exc:
@@ -196,27 +194,36 @@ def set_temp():
         e = sys.exec_info()[0]
         app.logger.error("any exception: %s", e)
     temp = float(temp)
+    setTempResult = app.anova_controller.set_temp(temp)
     output = {
-            "message": "Target temp updated to " + str(temp),
-            "set_temp": float(app.anova_controller.set_temp(temp))}
+            "message": "Target temp updated to " + str(setTempResult),
+            "anova": anova_context()}
 
     return jsonify(output)
 
 @app.route('/stop', methods=["POST"])
 def stop_anova():
+    # disabled for safety
     stop = app.anova_controller.stop_anova()
-    if stop == "s":
-        stop = "stopped"
-    output = {"status": stop,}
+    #stop = "s"
+    #if stop == "s":
+        #message = "Stopping"
+    output = {"message": stop,
+            "anova": anova_context()}
 
     return jsonify(output)
 
 @app.route('/start', methods=["POST"])
 def start_anova():
+    # commented out for safety
     status = app.anova_controller.start_anova()
-    if status == "s":
-        status = "starting"
-    output = {"status": status,}
+    #status = "starting"
+    if status == "s" or status == "start":
+        message = "Starting"
+    else:
+        message = "Unexpected result: " + status
+    output = {"message": message,
+            "anova": anova_context()}
 
     return jsonify(output)
 
@@ -307,12 +314,16 @@ def main():
 
     # adhoc context - doesn't work with my version of openssl, algorithm is too weak
     #app.run(host='0.0.0.0', port=5000, ssl_context='adhoc')
-    cert = os.environ["PYCIRCULATE_CERT"]
-    key = os.environ["PYCIRCULATE_KEY"]
-    app.logger.info("Using cert [%s] and key [%s]", cert, key)
-    app.run(host='0.0.0.0', port=5000, ssl_context=(cert, key))
+    try:
+        cert = os.environ["PYCIRCULATE_CERT"]
+        key = os.environ["PYCIRCULATE_KEY"]
+    except:
+        pass
+
+    #app.logger.info("Using cert [%s] and key [%s]", cert, key)
+    #app.run(host='0.0.0.0', port=5000, ssl_context=(cert, key))
     app.logger.info("Starting up for Adam")
-    #app.run(host='0.0.0.0', port=5000, ssl_context=None, debug=False, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, ssl_context=None, debug=False, use_reloader=False)
 
 if __name__ == '__main__':
     main()
