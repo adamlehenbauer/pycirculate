@@ -11,14 +11,25 @@ table { border-collapse: collapse; }
     width: 50%;
     padding: 10px;
 }
+#resultTime {
+    font-size: 12px;
+    color: gray;
+    font-style: italic;
+}
         </style>
     </head>
     <body>
         <div class="center">
             <!-- todo, download and serve from flask -->
             <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+            <script src="/static/jquery-dateformat.js"></script>
             <h1>Current Status</h1>
+            <a id="connect" href="/connect">Try connect</a>
             <table>
+                <tr>
+                    <td>Online?</td>
+                    <td>{{ anova_context.online }}</td>
+                </tr>
                 <tr>
                     <td>Current Status:</td>
                     <td id="currentStatus">{{ anova_context.anova_status }}</td>
@@ -62,7 +73,10 @@ table { border-collapse: collapse; }
             <button id="start-button">Start</button>
             <button id="stop-button">Stop</button>
             <h1>Result</h1>
-            <div id="result"></div>
+            <div>
+                <span id="result"></span>
+                <span id="resultTime"></span>
+            </div>
             </div>
 
         <script>
@@ -118,6 +132,13 @@ $("#refresh").click(function(event) {
     });
 });
 
+$("#connect").click(function(event) {
+    event.preventDefault();
+    $.get("/connect", function(message) {
+        updateMessage(message);
+     });
+});
+
 function updateDeviceData(data) {
     $("#currentStatus").empty().append(data.anova_status);
     $("#timerStatus").empty().append(data.timer_status.status);
@@ -132,7 +153,12 @@ function updateMessage(message) {
     } else {
         $("#result").empty().append(message);
     }
+    $("#resultTime").empty().append(
+        $.format.date(
+            new Date(),
+            "dd MMM h:mm:ss a"));
 }
+
         </script>
     </body>
 </html>

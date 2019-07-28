@@ -4,6 +4,7 @@ import logging
 import re
 
 replchars = re.compile(r'[\n\r]')
+
 def sanitize(raw):
     return replchars.sub(replchars_to_hex, raw)
 
@@ -84,6 +85,9 @@ class AnovaController(object):
         # Characteristic UUID: 0xFFE1
         self.characteristic = self.service.getCharacteristics()[0]
         self.is_connected = True
+
+    def is_connected(self):
+        return self.is_connected
 
     def __del__(self):
         self.close()
@@ -304,6 +308,3 @@ class AnovaController(object):
         command = "set date {}".format(date.strftime("%y %m %d %H %M"))
         return self.send_command_async(command)
 
-
-
-        
