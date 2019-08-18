@@ -20,7 +20,7 @@ class RESTAnovaController(AnovaController):
     TIMEOUT_HEARTBEAT = 20
     LOOPBACK = False
 
-### TODO NEXT: can't run this on macos becaus bluepy is linux only. would need some kind of
+    # TODO NEXT: can't run this on macos becaus bluepy is linux only. would need some kind of
     # TODO seam to allow this to run on macos, or just develop on linux
 
     def __init__(self, mac_address, connect=True, logger=None):
@@ -79,6 +79,7 @@ class RESTAnovaController(AnovaController):
             return super(RESTAnovaController, self)._send_command(command)
 
     def context(self):
+        # TODO this shouldn't be required after lifecycles are figured out
         if not self.is_connected():
             return {
                 "message": "Anova is not connected"
@@ -88,6 +89,7 @@ class RESTAnovaController(AnovaController):
         self.logger.info("timer in context:" + timer)
         timer = timer.split()
         output = {
+            "online": "true",
             "anova_status": self.anova_status(),
             "timer_status": {"minutes_remaining": int(timer[0]), "status": timer[1], },
             "target_temp": self.read_set_temp(),

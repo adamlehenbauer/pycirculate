@@ -5,17 +5,21 @@ import re
 
 replchars = re.compile(r'[\n\r]')
 
+
 def sanitize(raw):
     return replchars.sub(replchars_to_hex, raw)
 
+
 def replchars_to_hex(match):
     return r'\x{0:02x}'.format(ord(match.group()))
+
 
 # TODO write a test for this
 class History:
     """
     Holds read notifications to join split responses
     """
+
     def __init__(self):
         # what's arrived since the last read, some responses are split up into multiple messages,
         # we will join together all that arrive
@@ -43,10 +47,12 @@ class History:
 
         return "".join(joinable)
 
+
 class AnovaDelegate(btle.DefaultDelegate):
     """
     Process notifications from Anova.
     """
+
     def __init__(self):
         btle.DefaultDelegate.__init__(self)
         self.history = History()
@@ -58,13 +64,13 @@ class AnovaDelegate(btle.DefaultDelegate):
         self._store_notification(cHandle, data)
 
     def _store_notification(self, cHandle, data):
-        #self.last_notifications.append((cHandle, data))
+        # self.last_notifications.append((cHandle, data))
         # keep the last 10 notifications
-        #self.last_notifications = self.last_notifications[-10:]
+        # self.last_notifications = self.last_notifications[-10:]
         self.history.addEntry(cHandle, data)
 
     def get_last_notification(self):
-        #return self.last_notifications[-1]
+        # return self.last_notifications[-1]
         return self.history.getJoinedRead()
 
 
@@ -108,17 +114,17 @@ class AnovaController(object):
 
     def _send_command(self, command):
         command = "{0}\r".format(command)
-        self.logger.info(">>> command=[" + sanitize(command) +"]")
+        self.logger.info(">>> command=[" + sanitize(command) + "]")
         self.characteristic.write(command)
 
     def sanitize(raw):
         return self.replchars.sub(replchars_to_hex, raw)
 
     def replchars_to_hex(match):
-            return r'\x{0:02x}'.format(ord(match.group()))
+        return r'\x{0:02x}'.format(ord(match.group()))
 
     def _read(self):
-        #self.characteristic.read()
+        # self.characteristic.read()
         for i in [1, 2]:
             if self.anova.waitForNotifications(1.0):
                 self.characteristic.read()
@@ -251,7 +257,7 @@ class AnovaController(object):
         Pass in up to 6 tuples of (temperature, minute) pairs.
         """
         assert len(temp_minute_pairs) <= 6, "The Anova ignores programs longer than 6 steps."
-        program = " ".join("{0} {1}".format(t, m) for t,m in temp_minute_pairs)
+        program = " ".join("{0} {1}".format(t, m) for t, m in temp_minute_pairs)
         return self.send_command_async("set program {}".format(program))
 
     def start_program(self):
@@ -259,7 +265,7 @@ class AnovaController(object):
         Start the current program. Returns the echoed command. Needs more testing.
         """
         return self.send_command_async("start program")
-    
+
     def stop_program(self):
         """
         Stop the current program. Returns the echoed command. Needs more testing.
@@ -272,7 +278,6 @@ class AnovaController(object):
         """
         return self.send_command_async("resume program")
 
-
     ##### System commands
 
     def set_led(self, red, green, blue):
@@ -280,7 +285,7 @@ class AnovaController(object):
         Change the mouse wheel color on the device. The RGB values are integers from 0-255. 
         The return value is the echoed command if successful.
         """
-        for color, rgb in [("red", red), ("green", green), ("blue", blue),]:
+        for color, rgb in [("red", red), ("green", green), ("blue", blue), ]:
             assert rgb >= 0 and rgb <= 255, "{0}'s RGB value must be an integer from 0-255".format(color)
         return self.send_command_async("set led {red} {green} {blue}".format(red=red, green=green, blue=blue))
 
@@ -307,4 +312,3 @@ class AnovaController(object):
             date = datetime.datetime.now()
         command = "set date {}".format(date.strftime("%y %m %d %H %M"))
         return self.send_command_async(command)
-
