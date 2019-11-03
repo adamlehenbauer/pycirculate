@@ -32,16 +32,13 @@ table { border-collapse: collapse; }
         width: 50%;
     }
 }
-/*
-div.start-stop {
-    width:50%;
-}
-*/
+
 button.start-stop {
     width: 90%;
     padding-top: 20px;
     padding-bottom: 20px;
     font-size: xx-large;
+    line-height: 1;
 }
 
 div.start-stop {
@@ -51,10 +48,21 @@ div.start-stop {
     border: 0;
 }
 
+div.button-col {
+    display: flex;
+    align-items: stretch;
+}
+
 div.buttons {
-    line-height: 2em;
+}
+
+div.button-row {
 }
 
 div.col {
     padding: 7px;
+}
+
+span.button-temp {
+    font-size: large;
 }
