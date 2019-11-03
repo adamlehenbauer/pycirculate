@@ -1,0 +1,60 @@
+button {
+    margin: .5em;
+}
+
+.sambaal-container {
+    margin-bottom: 2em;
+}
+
+table, th, td { border: 1px solid black; }
+td { padding: 10px; }
+table { border-collapse: collapse; }
+
+.center {
+    margin: auto;
+    padding: 10px;
+}
+
+#resultTime {
+    font-size: 12px;
+    color: gray;
+    font-style: italic;
+}
+
+@media only screen and (max-width: 400px) {
+    .center {
+        width: 100%;
+    }
+}
+
+@media only screen and (min-width: 961px) {
+    .center {
+        width: 50%;
+    }
+}
+/*
+div.start-stop {
+    width:50%;
+}
+*/
+button.start-stop {
+    width: 90%;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    font-size: xx-large;
+}
+
+div.start-stop {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+div.buttons {
+    line-height: 2em;
+}
+
+div.col {
+    padding: 7px;
+}

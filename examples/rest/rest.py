@@ -73,9 +73,9 @@ def make_error(status_code, message, sub_code=None, action=None, **kwargs):
 
 @app.route('/', methods=["GET"])
 def index():
-    context = anova_controller.context()
+    context = dict(anova_controller.context())
     context['last_updated'] = http_date(context['last_updated'])
-    return render_template('app.html', anova_context=anova_controller.context())
+    return render_template('app.html', anova_context=context)
 
 
 @app.route("/connect", methods=["GET"])

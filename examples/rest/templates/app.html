@@ -1,21 +1,14 @@
 <!doctype html>
-<html>
+<html lang="en">
     <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <title>Anova App</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <!-- TODO may not want this relatively linked like this -->
+        <link rel="stylesheet" href="../static/project.css">
         <style>
-table, th, td { border: 1px solid black; }
-td { padding: 10px; }
-table { border-collapse: collapse; }
-.center {
-    margin: auto;
-    width: 50%;
-    padding: 10px;
-}
-#resultTime {
-    font-size: 12px;
-    color: gray;
-    font-style: italic;
-}
+
         </style>
     </head>
     <body>
@@ -23,62 +16,74 @@ table { border-collapse: collapse; }
             <!-- todo, download and serve from flask -->
             <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
             <script src="/static/jquery-dateformat.js"></script>
-            <h1>Current Status</h1>
-            <a id="connect" href="/connect">Try connect</a>
-            <table>
-                <tr>
-                    <td>Online?</td>
-                    <td>{{ anova_context.online }}</td>
-                </tr>
-                <tr>
-                    <td>Current Status:</td>
-                    <td id="currentStatus">{{ anova_context.anova_status }}</td>
-                </tr>
-                <tr>
-                    <td>Timer Status:</td>
-                    <td id="timerStatus">{{ anova_context.timer_status.status }}</td>
-                </tr>
-                <tr>
-                    <td>Target Temp:</td>
-                    <td id="targetTemp">{{ anova_context.target_temp }}</td>
-                </tr>
-                <tr>
-                    <td>Current Temp:</td>
-                    <td id="currentTemp">{{ anova_context.current_temp }}</td>
-                </tr>
-                <tr>
-                    <td>Last Updated:</td>
-                    <td id="lastUpdate">{{ anova_context.last_updated }}</td>
-                {#
-                <tr>
-                    <td>Everything:</td>
-                    <td>{{ anova_context }}</td>
-                </tr>
-                #}
-            </table>
-            <button id="refresh">Refresh</button>
-            <h1>Set Temp</h1>
-            <form id="tempForm" action="/temp">
-                <table>
+            <div class="sambaal-container">
+                <h1>Current Status</h1>
+                <div class="alert alert-danger">
+                    TODO this should be a different screen
+                    <a id="connect" href="/connect">Try connect</a>
+                </div>
+                <table class="table-bordered">
                     <tr>
-                        <!-- TODO add current temp, status -->
-                        <td>Temp: </td>
-                        <td>
-                            <input type="text" name="target-temp">
-                            <input type="submit" value="Set"/>
-                        </td>
+                        <td>Online?</td>
+                        <td>{{ anova_context.online }}</td>
                     </tr>
+                    <tr>
+                        <td>Current Status:</td>
+                        <td id="currentStatus">{{ anova_context.anova_status }}</td>
+                    </tr>
+                    <tr>
+                        <td>Timer Status:</td>
+                        <td id="timerStatus">{{ anova_context.timer_status.status }}</td>
+                    </tr>
+                    <tr>
+                        <td>Target Temp:</td>
+                        <td id="targetTemp">{{ anova_context.target_temp }}</td>
+                    </tr>
+                    <tr>
+                        <td>Current Temp:</td>
+                        <td id="currentTemp">{{ anova_context.current_temp }}</td>
+                    </tr>
+                    <tr>
+                        <td>Last Updated:</td>
+                        <td id="lastUpdate">{{ anova_context.last_updated }}</td>
+                    {#
+                    <tr>
+                        <td>Everything:</td>
+                        <td>{{ anova_context }}</td>
+                    </tr>
+                    #}
                 </table>
-            </form>
-            <button id="start-button">Start</button>
-            <button id="stop-button">Stop</button>
+                <button id="refresh" class="btn btn-secondary">Refresh</button>
+            </div>
+            <div class="sambaal-container">
+                <form id="tempForm" action="/temp" class="form-inline">
+                    <div class="form-group">
+                        <label for="target-temp">Set Temp</label>
+                        <input type="numbers" name="target-temp" class="form-control mb-2 mr-sm-2" placeholder="145">
+                        <input type="submit" value="Set" class="btn btn-primary mb-2"/>
+                    </div>
+                </form>
+                <div id="buttons">
+                    <div class="container-fluid start-stop">
+                        <div class="row">
+                            <div class="col">
+                                <button id="start-button" class="btn btn-success start-stop">Start</button>
+                            </div>
+                            <div class="col">
+                                <button id="stop-button" class="btn btn-danger start-stop">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sambaal-container">
             <h1>Result</h1>
-            <div>
-                <span id="result"></span>
-                <span id="resultTime"></span>
+                <div>
+                    <span id="result">Sample reponse message from the server</span>
+                    <span id="resultTime">Jan 14, 1999. 12:03:44.590 EST</span>
+                </div>
             </div>
-            </div>
-
+        </div>
         <script>
 $( "#tempForm" ).submit(function( event ) {
     event.preventDefault();
